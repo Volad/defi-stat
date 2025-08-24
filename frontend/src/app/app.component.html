@@ -1,0 +1,114 @@
+<div class="container">
+    <h1>{{ title }}</h1>
+
+    <div class="row">
+        <div class="card grow">
+            <h3>Inputs</h3>
+
+            <!-- Material autocompletes -->
+            <div class="row">
+                <div class="grow">
+                    <label>Collateral</label>
+                    <mat-form-field class="grow" appearance="outline">
+
+                        <input type="text" matInput placeholder="Type address/symbol/name" [formControl]="collateralCtrl" [matAutocomplete]="autoCol"
+                        >
+                        <mat-autocomplete #autoCol="matAutocomplete" (optionSelected)="onSelectCollateral($event.option.value)" [displayWith]="displayAsset">
+                            <mat-option *ngFor="let a of collateralOptions" [value]="a.vaultAddress">
+                                {{a.vaultSymbol}} — {{a.vaultAddress}}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+                    <div class="muted">Selected: {{ collateral }}</div>
+                </div>
+
+                <div class="grow">
+                    <label>Borrow</label>
+                    <mat-form-field class="grow" appearance="outline">
+
+                        <input type="text" matInput placeholder="Type address/symbol/name" [formControl]="borrowCtrl" [matAutocomplete]="autoBor">
+                        <mat-autocomplete #autoBor="matAutocomplete" (optionSelected)="onSelectBorrow($event.option.value)" [displayWith]="displayAsset">
+                            <mat-option *ngFor="let a of borrowOptions" [value]="a.vaultAddress">
+                                {{a.vaultSymbol}} — {{a.vaultAddress}}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+                    <div class="muted">Selected: {{ borrow }}</div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+                <div>
+                    <label>Leverage</label>
+                    <input type="number" [(ngModel)]="leverage" step="0.1" min="1" />
+                </div>
+                <div>
+                    <label>Rewards Collateral (%)</label>
+                    <input type="number" [(ngModel)]="rewardCollateral" step="0.01" />
+                </div>
+                <div>
+                    <label>Rewards Borrow (%)</label>
+                    <input type="number" [(ngModel)]="rewardBorrow" step="0.01" />
+                </div>
+                <div class="grow">
+                    <label>Range</label>
+                    <div class="btn-group">
+                        <button mat-flat-button color="basic" (click)="computeRange('1d')">Last 1 day</button>
+                        <button mat-flat-button color="basic" (click)="computeRange('30d')">Last 30 days</button>
+                        <button mat-flat-button color="basic" (click)="computeRange('360d')">Last 360 days</button>
+                    </div>
+                    <div class="muted">from {{fromISO}} to {{toISO}}</div>
+                </div>
+                <div style="display:flex; align-items:end;">
+                    <button mat-raised-button color="primary" (click)="buildSeries()">Build Chart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:16px;">
+        <div class="card grow" style="height:400px;">
+            <h3>APY & ROE</h3>
+            <canvas baseChart
+                    [type]="'line'"
+                    [data]="lineChartData"
+                    [options]="lineChartOptions">
+            </canvas>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:16px;">
+        <div class="card grow">
+            <h3>Snapshots (all points)</h3>
+            <table *ngIf="series?.length; else empty">
+                <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Borrow APY %</th>
+                    <th>Borrow Util %</th>
+                    <th>Supply APY %</th>
+                    <th>Supply Util %</th>
+                    <th>ROE %</th>
+                    <th>Health Factor</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr *ngFor="let r of series">
+                    <td style="text-align:left;">
+                        {{ (r.collateralTs || r.borrowTs) ? (r.collateralTs || r.borrowTs) : '' | date:'yyyy-MM-dd HH:mm:ss' }}
+                    </td>
+                    <td>{{ r.borrowBorrowApyPct | number:'1.2-2' }}</td>
+                    <td>{{ r.borrowUtilPct | number:'1.2-2' }}</td>
+                    <td>{{ r.collateralSupplyApyPct | number:'1.2-2' }}</td>
+                    <td>{{ r.collateralUtilPct | number:'1.2-2' }}</td>
+                    <td>{{ r.roePct | number:'1.2-2' }}</td>
+                    <td>{{ r.hf | number:'1.2-2' }}</td>
+                </tr>
+                </tbody>
+            </table>
+            <ng-template #empty>
+                <div class="muted">No data yet — build the chart to load series.</div>
+            </ng-template>
+        </div>
+    </div>
+</div>
