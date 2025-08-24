@@ -1,0 +1,85 @@
+#version: "3.9"
+
+name: defistat-stack
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: defi-stat-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: defi_stat
+    volumes:
+      - ./mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "mongodb://localhost:27017/defi_stat", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: defi-stat-backend:latest
+    container_name: defistat-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      # --- Mongo ---
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/defi_stat
+      # дублируем, если в коде читается кастомная переменная:
+      APP_MONGO_URI: mongodb://mongo:27017/defi_stat
+
+#      # --- Network config (пример для Avalanche) ---
+#      APP_NETWORKS_0_NAME: avalanche
+#      APP_NETWORKS_0_RPCURL: ${EULER_RPC_URL:-https://api.avax.network/ext/bc/C/rpc}
+#      APP_NETWORKS_0_UTILSLENS: ${EULER_UTILS_LENS:-0x37E873e98480a4D18711eb326F5A8F1A31C43FE6}
+#      APP_NETWORKS_0_VAUTLLENS: ${EULER_VAULT_LENS:-0xF3C3E71bE0CaFD4518D5594f355281e2109d3Ee2}
+#      APP_NETWORKS_0_IRMLENS: ${EULER_IRM_LENS:-0x8D990f217879E3C49894024f5D72431DA3Ef656C}
+#      APP_NETWORKS_0_ACCOUNTLENS: ${EULER_ACCOUNT_LENS:-0x484898e5d3C65362bfbd9DE252Bf9D56a0c9087C}
+#      APP_NETWORKS_0_ORACLELENS: ${EULER_ORACLE_LENS:-0xAB61aefC3Ef93490317310f2274125134765EbBF}
+#      APP_NETWORKS_0_SUBGRAPH_URL: ${EULER_SUBGRAPH_URL:-https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-avalanche/latest/gn}
+#
+#      # --- Merkl ---
+#      APP_MERKL_BASEURL: ${MERKL_BASE_URL:-https://api.merkl.xyz}
+#      APP_MERKL_TIMEOUTMS: 8000
+#      APP_REWARDS_MERKL_PROTOCOL: EULER
+#      APP_REWARDS_MERKL_REFRESHMS: 600000
+#
+#      # --- CORS (если есть глобальная настройка в приложении) ---
+#      APP_CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4300}
+
+      # --- JVM / Spring ---
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseZGC"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      # простой TCP healthcheck; если у тебя есть actuator, поменяй на curl к /actuator/health
+      test: ["CMD-SHELL", "timeout 2 bash -lc '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: defi-frontend:latest
+    container_name: defistat-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "4300:80"
+    # Если фронт ходит к backend по имени сервиса внутри сети (http://defistat-backend:8080),
+    # и ты указываешь это в environment.ts — доп. env тут не нужен.
+
+volumes:
+  mongo-data:
