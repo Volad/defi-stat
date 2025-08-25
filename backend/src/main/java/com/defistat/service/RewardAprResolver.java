@@ -1,4 +1,4 @@
-// com.defistat.rewards.RewardLookupService.java
+// com.defistat.rewards.RewardAprResolver.java
 package com.defistat.service;
 
 import com.defistat.model.RewardOpportunityDocument;
@@ -9,6 +9,18 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Locale;
 
+/**
+ * Resolves reward APR (%) for ROE according to these rules:
+ *
+ * 1) BEFORE the first DB record exists for (network, vault, role):
+ *    - Use userProvided APR (if null -> 0).
+ *
+ * 2) ON/AFTER the first DB record exists:
+ *    - Ignore userProvided entirely.
+ *    - Use the latest DB record <= T (snapshot time):
+ *       - if status == LIVE  -> return stored APR (null -> 0).
+ *       - else               -> return 0 (campaign ended / inactive).
+ */
 @Service
 @RequiredArgsConstructor
 public class RewardAprResolver {
@@ -17,46 +29,49 @@ public class RewardAprResolver {
 
     /**
      * @param network      Network name (e.g., "avalanche", "base")
-     * @param vault        Target vault address (lowercase or checksummed consistently across the app)
+     * @param vault        Vault address (normalized consistently across the app)
      * @param role         "collateral" or "borrow"
-     * @param atTs         Snapshot timestamp (tsTick) to resolve APR "as of"
-     * @param userProvided Optional user-provided APR (percent); used only if DB is empty
-     * @return Effective rewards APR (%) to feed into ROE math
+     * @param atTs         Snapshot timestamp to resolve APR "as of"
+     * @param userProvided Optional user-provided APR (%) — only used BEFORE the first DB record exists
+     * @return Effective rewards APR (%) for ROE math
      */
     public double resolve(String network, String vault, String role, Instant atTs, Double userProvided) {
         final String net = network.toLowerCase(Locale.ROOT);
 
-        // Check if there is any record at all for this (network, vault, role).
-        // If there is nothing in DB, we fall back to the user-provided APR (or 0).
-        boolean anyInDb = repo
-                .findTopByNetworkAndVaultAddressAndRoleOrderByTsDesc(net, vault, role)
-                .isPresent();
-
-        if (!anyInDb) {
-            // Rule #1
+        // Find the earliest record for (net, vault, role).
+        // If there's no record at all -> PRIOR to first record by definition -> use userProvided or 0.
+        var earliestOpt = repo.findTopByNetworkAndVaultAddressAndRoleOrderByTsAsc(net, vault, role);
+        if (earliestOpt.isEmpty()) {
             return userProvided != null ? userProvided : 0.0;
         }
 
-        // DB has records: pick the latest one at or before the snapshot time.
-        // If nothing <= T exists (all records are after T), we treat it as "no active campaign at T" → APR = 0.
-        return repo.findTopByNetworkAndVaultAddressAndRoleAndTsLessThanEqualOrderByTsDesc(net, vault, role, atTs)
-                .map(doc -> aprOrZeroIfEnded(doc))
-                .orElse(0.0);
-    }
+        // If the requested time is BEFORE the earliest record ts -> use userProvided or 0.
+        var earliest = earliestOpt.get();
+        if (atTs != null && atTs.isBefore(earliest.getTs())) {
+            return userProvided != null ? userProvided : 0.0;
+        }
 
-    /**
-     * Returns APR if the campaign was LIVE in this record; otherwise 0.
-     * We assume the "status" reflects the campaign state at this record's timestamp.
-     */
-    private double aprOrZeroIfEnded(RewardOpportunityDocument doc) {
-        final String status = doc.getStatus() == null ? "" : doc.getStatus();
-        final boolean live = "LIVE".equalsIgnoreCase(status);
+        // From this point on (on/after earliest record): userProvided MUST be ignored.
+        // We always resolve from DB at or before T; if not LIVE -> 0.
+        var asOfOpt = repo.findTopByNetworkAndVaultAddressAndRoleAndTsLessThanEqualOrderByTsDesc(net, vault, role,
+                atTs != null ? atTs : Instant.now());
 
-        if (!live) {
-            // Rule #3: campaign ended (or not live) at/before the requested time → APR = 0
+        // Defensive: if for some reason there is no record <= T (e.g., atTs way in the past but not before earliest),
+        // we still treat it as "no active campaign as of T" -> 0.
+        if (asOfOpt.isEmpty()) {
             return 0.0;
         }
-        // Use the stored APR; null is interpreted as 0
-        return doc.getRewardApyPct() == null ? 0.0 : doc.getRewardApyPct();
+
+        var doc = asOfOpt.get();
+        return aprIfLiveElseZero(doc);
+    }
+
+    /** Returns APR if campaign is LIVE in this record; otherwise 0. */
+    private double aprIfLiveElseZero(RewardOpportunityDocument doc) {
+        final String status = doc.getStatus() == null ? "" : doc.getStatus();
+        final boolean live = "LIVE".equalsIgnoreCase(status);
+        if (!live) return 0.0;
+        Double apr = doc.getRewardApyPct();
+        return apr == null ? 0.0 : apr;
     }
 }

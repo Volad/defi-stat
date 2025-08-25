@@ -1,6 +1,6 @@
-cd .backend
+cd ./backend
 ./gradlew clean build
-docker build -f Dockerfile.backend -t defi-stat-backend:latest .
+docker build -t defi-stat-backend:latest .
 
 
 cd ../frontend

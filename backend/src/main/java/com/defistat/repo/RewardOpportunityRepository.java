@@ -27,4 +27,9 @@ public interface RewardOpportunityRepository extends MongoRepository<RewardOppor
     Optional<RewardOpportunityDocument>
     findTopByNetworkAndVaultAddressAndRoleOrderByTsDesc(
             String network, String vaultAddress, String role);
+
+    /** Earliest record for (network, vault, role). Used to decide "before first record". */
+    Optional<RewardOpportunityDocument>
+    findTopByNetworkAndVaultAddressAndRoleOrderByTsAsc(
+            String network, String vaultAddress, String role);
 }

@@ -36,7 +36,7 @@ export interface RoeHfSeriesRequest {
   priceBorrowUSD?: number;
 }
 
-export interface RoeHfResponse {
+export interface RoeHFHistoryPoint {
   network: string;
   collateralVault: string;
   borrowVault: string;
@@ -57,4 +57,14 @@ export interface RoeHfResponse {
   roePct: number;
   hf: number;
   note?: string;
+}
+
+export interface TableRow {
+  // Flattened view model for the table (one timestamp per row)
+  timestamp: Date;              // using the more recent of collateralTs/borrowTs (or collateral if both exist)
+  supply: number;               // collateralSupplyApyPct
+  supplyReward: number;         // collateralRewardsApyPct
+  borrow: number;               // borrowBorrowApyPct
+  borrowReward: number;         // borrowRewardsApyPct
+  roe: number;                  // roePct
 }

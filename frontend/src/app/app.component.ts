@@ -1,22 +1,43 @@
-import {Component, OnInit, OnDestroy, ViewChild} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule, ReactiveFormsModule, FormControl} from '@angular/forms';
-import {ApiService} from './api.service';
-import {AssetDTO, RoeHfResponse} from './types';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { ApiService } from './api.service';
+import { AssetDTO, RoeHFHistoryPoint } from './types';
 
 // ng2-charts
-import {BaseChartDirective, NgChartsModule} from 'ng2-charts';
-import {ChartConfiguration} from 'chart.js';
+import { BaseChartDirective, NgChartsModule } from 'ng2-charts';
+import { ChartConfiguration } from 'chart.js';
 
-// Angular Material
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatInputModule} from '@angular/material/input';
-import {MatAutocompleteModule} from '@angular/material/autocomplete';
-import {MatButtonModule} from '@angular/material/button';
-import {MatIconModule} from '@angular/material/icon';
+// Angular Material (inputs, autocomplete, buttons, icons)
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+
+
+// Angular Material (table + sorting)
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 
 const DEFAULT_COLLATERAL = '0x39dE0f00189306062D79eDEC6DcA5bb6bFd108f9';
 const DEFAULT_BORROW = '0xA45189636c04388ADBb4D865100DD155e55682EC';
+
+export interface TableRow {
+    /** Chosen timestamp for the row (prefer collateralTs, then borrowTs). */
+    timestamp: Date;
+    /** Collateral supply APR (%) */
+    supply: number;
+    /** Collateral rewards APR (%) */
+    supplyReward: number;
+    /** Borrow APR (%) */
+    borrow: number;
+    /** Borrow rewards APR (%) */
+    borrowReward: number;
+    /** Computed ROE (%) */
+    roe: number;
+}
 
 @Component({
     selector: 'app-root',
@@ -25,8 +46,10 @@ const DEFAULT_BORROW = '0xA45189636c04388ADBb4D865100DD155e55682EC';
         CommonModule, FormsModule, ReactiveFormsModule,
         // charts
         NgChartsModule,
-        // material
-        MatFormFieldModule, MatInputModule, MatAutocompleteModule, MatButtonModule, MatIconModule
+        // material (inputs, autocomplete, buttons, icons)
+        MatFormFieldModule, MatInputModule, MatAutocompleteModule, MatButtonModule, MatIconModule,
+        // material table + sorting
+        MatTableModule, MatSortModule,MatCheckboxModule
     ],
     templateUrl: './app.component.html',
     styleUrls: ['../styles.css']
@@ -56,39 +79,123 @@ export class AppComponent implements OnInit, OnDestroy {
     fromISO = '';
     toISO = '';
 
-    // Entire series kept here for the table
-    series: RoeHfResponse[] = [];
+    // Entire series kept here for the chart + table
+    series: RoeHFHistoryPoint[] = [];
     // Latest row (derived from series tail or point endpoint)
-    latest?: RoeHfResponse;
+    latest?: RoeHFHistoryPoint;
 
-    // Chart binding
+    // ==== Chart binding ====
     @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
+    // --- chart datasets: 5 lines with default visibility as requested ---
     lineChartData: ChartConfiguration<'line'>['data'] = {
         labels: [] as string[],
         datasets: [
-            {data: [] as number[], label: 'Collateral Supply APY (%)', tension: 0.2},
-            {data: [] as number[], label: 'Debt Borrow APY (%)', tension: 0.2},
-            {data: [] as number[], label: 'ROE (%)', tension: 0.2}
+            {
+                data: [] as number[],
+                label: 'Collateral Supply APY (%)',
+                tension: 0.2,
+                hidden: false,
+                borderColor: '#1f77b4',          // blue
+                backgroundColor: '#1f77b4',
+                pointBackgroundColor: '#1f77b4',
+                pointBorderColor: '#1f77b4',
+                fill: false
+            },
+            {
+                data: [] as number[],
+                label: 'Debt Borrow APY (%)',
+                tension: 0.2,
+                hidden: false,
+                borderColor: '#d62728',          // red
+                backgroundColor: '#d62728',
+                pointBackgroundColor: '#d62728',
+                pointBorderColor: '#d62728',
+                fill: false
+            },
+            {
+                data: [] as number[],
+                label: 'ROE (%)',
+                tension: 0.2,
+                hidden: false,
+                borderColor: '#2ca02c',          // green
+                backgroundColor: '#2ca02c',
+                pointBackgroundColor: '#2ca02c',
+                pointBorderColor: '#2ca02c',
+                fill: false
+            },
+            {
+                data: [] as number[],
+                label: 'Supply reward (%)',
+                tension: 0.2,
+                hidden: true,
+                borderColor: '#9467bd',          // purple
+                backgroundColor: '#9467bd',
+                pointBackgroundColor: '#9467bd',
+                pointBorderColor: '#9467bd',
+                fill: false
+            },
+            {
+                data: [] as number[],
+                label: 'Borrow reward (%)',
+                tension: 0.2,
+                hidden: true,
+                borderColor: '#ff7f0e',          // orange
+                backgroundColor: '#ff7f0e',
+                pointBackgroundColor: '#ff7f0e',
+                pointBorderColor: '#ff7f0e',
+                fill: false
+            }
         ]
     };
+
     lineChartOptions: ChartConfiguration<'line'>['options'] = {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: {mode: 'index', intersect: false},
-        plugins: {legend: {position: 'top'}, tooltip: {enabled: true}},
-        scales: {y: {title: {display: true, text: 'APR (%)'}}}
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' }, tooltip: { enabled: true } },
+        scales: { y: { title: { display: true, text: 'APR (%)' } } }
     };
+
+    // ==== Table binding (Material) ====
+    /** Data source for the Material table. */
+    dataSource = new MatTableDataSource<TableRow>([]);
+    /** Displayed columns order. */
+    displayedColumns = ['timestamp', 'supply', 'supplyReward', 'borrow', 'borrowReward', 'roe'];
+    /** Sorting reference (attached in ngAfterViewInit via setter to avoid timing issues). */
+    @ViewChild(MatSort, { static: true }) set matSort(sort: MatSort) {
+        if (sort) {
+            this.dataSource.sort = sort;
+            // Provide custom accessor to sort by Date properly.
+            this.dataSource.sortingDataAccessor = (item: TableRow, property: string): string | number => {
+                switch (property) {
+                    case 'timestamp':
+                        return item.timestamp?.getTime?.() ?? 0;
+                    case 'supply':
+                        return item.supply ?? 0;
+                    case 'supplyReward':
+                        return item.supplyReward ?? 0;
+                    case 'borrow':
+                        return item.borrow ?? 0;
+                    case 'borrowReward':
+                        return item.borrowReward ?? 0;
+                    case 'roe':
+                        return item.roe ?? 0;
+                    default:
+                        return 0;
+                }
+            };
+        }
+    }
 
     private timer?: any;
 
-    constructor(private api: ApiService) {
-    }
+    constructor(private api: ApiService) {}
 
     ngOnInit(): void {
         this.computeRange('1d');
         this.loadAssets();
 
-        // filter options live
+        // Live filter options for autocomplete
         this.collateralCtrl.valueChanges.subscribe(val => {
             const q = (val || '').toLowerCase().trim();
             this.collateralOptions = this.assets.filter(a => !q ||
@@ -106,7 +213,7 @@ export class AppComponent implements OnInit, OnDestroy {
             );
         });
 
-        // init inputs with defaults
+        // Initialize inputs with defaults once assets arrive (see loadAssets()).
         // this.collateralCtrl.setValue(this.collateral);
         // this.borrowCtrl.setValue(this.borrow);
     }
@@ -121,7 +228,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.collateralOptions = this.assets;
             this.borrowOptions = this.assets;
 
-            // Теперь, когда assets есть, задаём дефолтные значения контролов:
+            // Assign default values to inputs after assets are ready
             if (!this.collateralCtrl.value) this.collateralCtrl.setValue(this.collateral);
             if (!this.borrowCtrl.value) this.borrowCtrl.setValue(this.borrow);
         });
@@ -163,30 +270,72 @@ export class AppComponent implements OnInit, OnDestroy {
         this.api.roeHfSeries(body as any).subscribe(series => {
             this.series = series ?? [];
             this.latest = this.series.length ? this.series[this.series.length - 1] : undefined;
+
+            // Rebuild chart and table from the series
             this.setSeries(this.series);
+            this.updateTableFromSeries(this.series);
+
+            // Start auto-refresh loop
             this.setupAutoRefresh();
         });
     }
 
-    private setSeries(series: RoeHfResponse[]) {
+    private setSeries(series: RoeHFHistoryPoint[]) {
         const labels = series.map(p => {
             const iso = p.collateralTs || p.borrowTs;
             return iso ? new Date(iso).toLocaleString() : '';
         });
-        const dSupply = series.map(p => p.collateralSupplyApyPct ?? 0);
-        const dBorrow = series.map(p => p.borrowBorrowApyPct ?? 0);
-        const dRoe = series.map(p => p.roePct ?? 0);
 
-        // Replace references so ng2-charts detects changes
+        // Core lines
+        const dSupply       = series.map(p => p.collateralSupplyApyPct   ?? 0);
+        const dBorrow       = series.map(p => p.borrowBorrowApyPct       ?? 0);
+        const dRoe          = series.map(p => p.roePct                   ?? 0);
+
+        // Rewards lines
+        const dSupplyReward = series.map(p => p.collateralRewardsApyPct  ?? 0);
+        const dBorrowReward = series.map(p => p.borrowRewardsApyPct      ?? 0);
+
+        // Preserve current hidden flags while refreshing data
+        const keep = (i: number) => this.lineChartData.datasets?.[i]?.hidden ?? false;
+
         this.lineChartData = {
             labels,
             datasets: [
-                {...this.lineChartData.datasets[0], data: dSupply},
-                {...this.lineChartData.datasets[1], data: dBorrow},
-                {...this.lineChartData.datasets[2], data: dRoe}
+                { ...this.lineChartData.datasets[0], data: dSupply,       hidden: keep(0) },
+                { ...this.lineChartData.datasets[1], data: dBorrow,       hidden: keep(1) },
+                { ...this.lineChartData.datasets[2], data: dRoe,          hidden: keep(2) },
+                { ...this.lineChartData.datasets[3], data: dSupplyReward, hidden: keep(3) },
+                { ...this.lineChartData.datasets[4], data: dBorrowReward, hidden: keep(4) }
             ]
         };
+
         this.chart?.update();
+    }
+
+    toggleDatasetVisibility(idx: number) {
+        const ds = this.lineChartData.datasets[idx];
+        if (!ds) return;
+        ds.hidden = !ds.hidden;
+        this.chart?.update();
+    }
+
+    /** Builds Material table rows from the backend series. */
+    private updateTableFromSeries(series: RoeHFHistoryPoint[]) {
+        const rows: TableRow[] = (series || []).map(p => {
+            const tsStr = p.collateralTs || p.borrowTs || new Date().toISOString();
+            const ts = new Date(tsStr);
+            return {
+                timestamp: ts,
+                supply: p.collateralSupplyApyPct ?? 0,
+                supplyReward: p.collateralRewardsApyPct ?? 0,
+                borrow: p.borrowBorrowApyPct ?? 0,
+                borrowReward: p.borrowRewardsApyPct ?? 0,
+                roe: p.roePct ?? 0
+            };
+        });
+
+        // Feed data into the table; sorting is already wired via @ViewChild(MatSort)
+        this.dataSource.data = rows;
     }
 
     private setupAutoRefresh() {
@@ -206,41 +355,37 @@ export class AppComponent implements OnInit, OnDestroy {
             borrowRewardsApyPct: this.rewardBorrow
         };
         this.api.roeHfPoint(body as any).subscribe(point => {
-            // обновляем latest и ДОБАВЛЯЕМ/ОБНОВЛЯЕМ в общей серии (для таблицы и графика)
             this.latest = point;
 
-            const label = (point.collateralTs || point.borrowTs)
-                ? new Date(point.collateralTs || point.borrowTs!).toISOString()
-                : '';
-
-            // найдём есть ли точка с таким же ts в series
+            // Insert or replace the point in the local series (by matching timestamp)
             const idx = this.series.findIndex(x => {
                 const tsX = (x.collateralTs || x.borrowTs) ?? '';
-                return tsX === (point.collateralTs || point.borrowTs);
+                const tsP = (point.collateralTs || point.borrowTs) ?? '';
+                return tsX === tsP && tsX !== '';
             });
 
             if (idx >= 0) {
-                // заменяем точку
                 const next = [...this.series];
                 next[idx] = point;
                 this.series = next;
             } else {
-                // добавляем в конец
                 this.series = [...this.series, point];
             }
 
-            // пересобрать чарт из series
+            // Rebuild chart and table after the update
             this.setSeries(this.series);
+            this.updateTableFromSeries(this.series);
         });
     }
 
+    /** Display function for mat-autocomplete: prefer symbol + short address. */
     displayAsset = (value: string | { vaultAddress?: string } | null): string => {
         if (!value) return '';
         const addr = typeof value === 'string' ? value : (value?.vaultAddress ?? '');
         if (!addr) return '';
-
-        const list = this.assets ?? [];                      // страховка от undefined
+        const list = this.assets ?? [];
         const a = list.find(x => x.vaultAddress?.toLowerCase() === addr.toLowerCase());
-        return a?.vaultSymbol + " - " + addr.substring(0, 10) ?? addr;                       // если не нашли — показываем адрес
+        // Show "SYMBOL - 0x1234..." if available, otherwise address
+        return a ? `${a.vaultSymbol ?? ''} - ${addr.substring(0, 10)}` : addr;
     };
 }
