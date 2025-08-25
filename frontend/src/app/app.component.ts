@@ -153,7 +153,19 @@ export class AppComponent implements OnInit, OnDestroy {
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: { legend: { position: 'top' }, tooltip: { enabled: true } },
-        scales: { y: { title: { display: true, text: 'APR (%)' } } }
+        scales: { y: {
+                title: { display: true, text: 'APR (%)' }
+            },
+            x: {
+                // Hide all tick labels on X axis
+                ticks: {
+                    display: false
+                },
+                grid: {
+                    // Optional: if you also want to hide vertical grid lines
+                    drawTicks: false
+                }
+            } }
     };
 
     // ==== Table binding (Material) ====

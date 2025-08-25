@@ -35,6 +35,7 @@ services:
       # дублируем, если в коде читается кастомная переменная:
       APP_MONGO_URI: mongodb://mongo:27017/defi_stat
 
+
 #      # --- Network config (пример для Avalanche) ---
 #      APP_NETWORKS_0_NAME: avalanche
 #      APP_NETWORKS_0_RPCURL: ${EULER_RPC_URL:-https://api.avax.network/ext/bc/C/rpc}

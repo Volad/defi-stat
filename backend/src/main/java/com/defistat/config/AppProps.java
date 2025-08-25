@@ -4,6 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -22,10 +23,12 @@ public class AppProps {
 
     @Data
     public static class Network {
-        private String rpcUrl;
+        private List<String> rpcUrls;
         private String chainId;
         private String utilsLens;
         private Subgraph subgraph = new Subgraph();
+        private Polling polling = new Polling();
+
     }
 
     @Data
@@ -43,9 +46,7 @@ public class AppProps {
 
     @Data
     public static class Polling {
-        private int defaultIntervalSeconds = 600;
-        private int assetsIntervalSeconds = 600;
-
+        private String cron = "0 0/10 * * * ?";
 
     }
 
