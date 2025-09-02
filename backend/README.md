@@ -23,3 +23,4 @@ Swagger UI: http://localhost:8080/swagger-ui/index.html
 - `PATCH /api/v1/pairs/{id}/enable?enabled=true|false`
 - `DELETE /api/v1/pairs/{id}`
 - `GET /api/v1/snapshots`
+
