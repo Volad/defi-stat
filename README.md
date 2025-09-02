@@ -1,4 +1,4 @@
-# DeFi-Stat
+# DeFi-Stat (EULER ONLY)
 
 **DeFi-Stat** is a full-stack project for monitoring and analyzing DeFi metrics such as **Supply APY, Borrow APY, ROE (Return on Equity), Health Factor**, and reward yields.  
 It combines a Java/Spring Boot backend, an Angular frontend, and MongoDB storage, fully containerized with Docker.
