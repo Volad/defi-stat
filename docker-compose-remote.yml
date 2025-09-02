@@ -20,10 +20,7 @@ services:
       retries: 10
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: defi-stat-backend:latest
+    image: docker.io/volad/defi-stat-backend:latest
     container_name: defistat-backend
     restart: unless-stopped
     depends_on:
@@ -67,10 +64,7 @@ services:
       retries: 20
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    image: defi-frontend:latest
+    image: docker.io/volad/defi-stat-frontend:latest
     container_name: defistat-frontend
     restart: unless-stopped
     depends_on:
