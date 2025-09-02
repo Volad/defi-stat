@@ -1,3 +1,6 @@
+/* =========================
+   Base layout
+   ========================= */
 :root {
     --gap: 12px;
     font-family: Inter, system-ui, Arial, sans-serif;
@@ -15,18 +18,21 @@ body {
     padding: 20px;
 }
 
-.row {
-    display: flex;
-    gap: var(--gap);
-    flex-wrap: wrap;
-}
+.row { display: flex; gap: var(--gap); flex-wrap: wrap; }
+.gap12 { gap: 12px; }
+.align-end { align-items: flex-end; }
+.grow { flex: 1 1 320px; }
 
+/* =========================
+   Cards
+   ========================= */
 .card {
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    width: 100%;
     padding: 16px;
     background: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
 }
 
 .card h3 {
@@ -34,121 +40,198 @@ body {
     font-weight: 600;
 }
 
+/* Extra bottom padding for chart */
+.chart-pad { padding-bottom: 12px; }
+
+/* =========================
+   Typo & basic inputs
+   ========================= */
 label {
-    font-size: 12px;
-    color: #555;
     display: block;
     margin-bottom: 6px;
+    font-size: 12px;
+    color: #555;
 }
 
 input, select, button {
     padding: 8px 10px;
-    border-radius: 8px;
     border: 1px solid #d1d5db;
+    border-radius: 8px;
 }
 
-input[type="number"] {
-    width: 120px;
+input[type="number"] { width: 120px; }
+
+.muted { color: #6b7280; font-size: 12px; }
+
+/* =========================
+   Angular Material sizing
+   ========================= */
+mat-form-field { width: 100%; }
+
+.mat-form-field-appearance-outline .mat-form-field-flex {
+    min-height: 40px;        /* match number inputs */
+    align-items: center;
+}
+.mat-form-field-appearance-outline .mat-form-field-infix {
+    padding: .4em 0 .6em 0;
 }
 
-.btn {
-    cursor: pointer;
+/* Wider fields inside .grow */
+.row .grow mat-form-field { min-width: 400px; }
+
+/* =========================
+   Date range (compact, two equal “plain-div” fields)
+   ========================= */
+
+/* Wrapper sits on same baseline as other inputs */
+.date-range-wrap {
+    flex: 0 0 auto;
+    align-self: flex-end;
+    margin-bottom: 0;
 }
 
-.btn.primary {
-    background: #2563eb;
-    color: #fff;
-    border-color: #2563eb;
-}
-
-.btn.ghost {
+/* Outer field styled like a normal input */
+.date-range .mat-form-field-flex {
+    min-height: 40px;
+    align-items: center;
+    padding: 0 8px;
     background: #fff;
-    color: #111827;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
 }
 
-.btn-group {
+/* Hide Material outlines */
+.date-range .mat-form-field-outline,
+.date-range .mat-form-field-outline-thick { display: none !important; }
+
+/* Remove extra padding inside */
+.date-range .mat-form-field-infix {
+    padding: 0;
+    border: 0;
+}
+
+/* Two inner inputs on one line, equal width */
+.date-range .mat-date-range-input-container {
     display: flex;
-    gap: 8px;
-    margin-top: 6px;
+    align-items: center;
+    gap: 6px;
+    padding: 0 2px;
+}
+.date-range .mat-date-range-input-wrapper {
+    width: 50%;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
+/* Make both inner inputs look like plain divs (no inner borders) */
+.date-range input[matStartDate],
+.date-range input[matEndDate] {
+    flex: 1 1 0%;
+    min-width: 0;
+    text-align: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border-radius: 0 !important;
+    font-size: 14px;
+    line-height: 24px;
+    height: 24px;
+    padding: 0 2px;
+    cursor: default;           /* pairs nicely with readonly */
 }
+
+/* Separator between the two inputs */
+.date-range .mat-date-range-input-separator {
+    margin: 0 4px;
+    font-size: 14px;
+    opacity: .7;
+}
+
+/* Calendar icon spacing */
+.date-range .mat-datepicker-toggle {
+    margin-left: 6px;
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* If you want the whole date-range to match number input width: */
+.date-range { width: 240px; height: 40px; }
+
+/* =========================
+   Range + Build layout (70/30 inside the remaining space)
+   ========================= */
+.range-build-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-width: 320px;
+}
+
+.range-area { flex: 0 1 70%; min-width: 260px; }
+.build-area {
+    flex: 0 1 30%;
+    min-width: 160px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.range-area .date-range { width: 100%; }
+.w-100 { width: 100%; }
+
+@media (max-width: 900px) {
+    .range-build-row { flex-wrap: wrap; }
+    .range-area, .build-area { flex: 1 1 100%; }
+}
+
+/* =========================
+   Table
+   ========================= */
+.table-wrap {
+    width: 100%;
+    max-height: 420px;
+    overflow: auto;
+    display: block;
+}
+
+table { width: 100%; border-collapse: collapse; }
+table.full-width { width: 100%; min-width: 100%; table-layout: auto; }
 
 th, td {
     padding: 8px 10px;
     border-bottom: 1px dashed #e5e7eb;
     text-align: right;
 }
+th:first-child, td:first-child { text-align: left; }
 
-th:first-child, td:first-child {
-    text-align: left;
-}
+.centered-table td { text-align: center; vertical-align: middle; }
+.mat-mdc-header-cell { font-weight: bold !important; }
 
-.flex {
-    display: flex;
-    gap: var(--gap);
-    align-items: end;
-}
-
-.grow {
-    flex: 1;
-}
-
-.muted {
-    color: #6b7280;
-    font-size: 12px;
-}
-
-mat-form-field {
+/* =========================
+   Averages grid
+   ========================= */
+.avg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
     width: 100%;
+    margin-top: 12px;
 }
-
-.row .grow mat-form-field {
-    min-width: 400px; /* или сколько нужно */
-}
-
-/* app.component.css */
-
-/* Wrapper that provides scrollable area; sticky header stays on top */
-.table-wrap {
-    /* Set desired height; adjust to your layout */
-    max-height: 420px;
-    overflow: auto;
-
-    /* To help sticky header work smoothly inside wrapper */
-    display: block;
-}
-
-/* Optional width for filter field */
-.w-300 {
-    width: 300px;
-}
-
-
-/* Make the table stretch to full width of its parent */
-table.full-width {
-    width: 100%;
-    min-width: 100%;
-    table-layout: auto; /* or fixed if you want equal-width columns */
-}
-
-/* Wrapper should also allow it to fill */
-.table-wrap {
-    width: 100%;
-    max-height: 420px; /* keep your scroll height */
-    overflow: auto;
-    display: block;
-}
-
-.mat-mdc-header-cell {
-    font-weight: bold !important;
-}
-
-.centered-table td,
-.centered-table td {
+.avg-item {
+    padding: 16px;
+    border-radius: 8px;
+    background: #f8f9fa;
     text-align: center;
-    vertical-align: middle;
+    font-size: 14px;
+    font-weight: 500;
 }
+
+@media (max-width: 980px) { .avg-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .avg-grid { grid-template-columns: 1fr; } }
+
+/* =========================
+   Chart overflow guard
+   ========================= */
+canvas { display: block; }
+.chart-pad .chartjs-size-monitor,
+.chart-pad canvas { margin-bottom: 4px; }

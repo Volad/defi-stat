@@ -1,7 +1,7 @@
 spring:
   data:
     mongodb:
-      uri: ${MONGODB_URI:localhost:27017/defi_stat}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/defi_stat}
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
@@ -14,6 +14,16 @@ app:
     baseUrl: https://api.merkl.xyz    # V4 API
     enabled: true
     timeoutMs: 5000
+  euler:
+    eulerscan:
+      baseUrl: https://api.eulerscan.xyz
+      # сеть → chain-параметр EulerScan
+      chainMap:
+        avalanche: avax
+        avax: avax
+        base: base
+        ethereum: ethereum
+        arbitrum: arb
   network:
     avalanche:
       chainId: 43114
@@ -36,10 +46,10 @@ app:
         url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-base/latest/gn"
       polling:
         cron: "0 0/20 * * * ?"  # every 20 minutes
-  #    mainnet:
-  #      rpcUrl: ${EULER_RPC_URL_MAINNET:https://eth.llamarpc.com}
-  #      subgraph:
-  #        url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-mainnet/latest/gn"
+    ethereum:
+        rpcUrls: ${EULER_RPC_URL_MAINNET:https://eth.llamarpc.com}
+        subgraph:
+          url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-mainnet/latest/gn"
 
   calc:
     liquidationThresholdPct: 83

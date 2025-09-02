@@ -34,7 +34,7 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/defi_stat
       # дублируем, если в коде читается кастомная переменная:
       APP_MONGO_URI: mongodb://mongo:27017/defi_stat
-
+      INFURA_API_KEY: 4332d5c2b5644ff49b9561508908becb
 
 #      # --- Network config (пример для Avalanche) ---
 #      APP_NETWORKS_0_NAME: avalanche

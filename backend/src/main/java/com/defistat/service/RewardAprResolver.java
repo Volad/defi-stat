@@ -40,7 +40,7 @@ public class RewardAprResolver {
 
         // Find the earliest record for (net, vault, role).
         // If there's no record at all -> PRIOR to first record by definition -> use userProvided or 0.
-        var earliestOpt = repo.findTopByNetworkAndVaultAddressAndRoleOrderByTsAsc(net, vault, role);
+        var earliestOpt = repo.findTopByNetworkAndVaultAddressAndRoleOrderByTsAsc(net, vault.toLowerCase(), role);
         if (earliestOpt.isEmpty()) {
             return userProvided != null ? userProvided : 0.0;
         }
@@ -53,7 +53,7 @@ public class RewardAprResolver {
 
         // From this point on (on/after earliest record): userProvided MUST be ignored.
         // We always resolve from DB at or before T; if not LIVE -> 0.
-        var asOfOpt = repo.findTopByNetworkAndVaultAddressAndRoleAndTsLessThanEqualOrderByTsDesc(net, vault, role,
+        var asOfOpt = repo.findTopByNetworkAndVaultAddressAndRoleAndTsLessThanEqualOrderByTsDesc(net, vault.toLowerCase(), role,
                 atTs != null ? atTs : Instant.now());
 
         // Defensive: if for some reason there is no record <= T (e.g., atTs way in the past but not before earliest),

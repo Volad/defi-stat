@@ -14,7 +14,7 @@ export class ApiService {
   }
 
   roeHfSeries(body: RoeHfSeriesRequest): Observable<RoeHFHistoryPoint[]> {
-    return this.http.post<RoeHFHistoryPoint[]>(`${this.base}/roe-hf/series`, body);
+    return this.http.post<RoeHFHistoryPoint[]>(`${this.base}/roe-hf/series-eulerscan`, body);
   }
 
   roeHfPoint(body: RoeHfRequest): Observable<RoeHFHistoryPoint> {

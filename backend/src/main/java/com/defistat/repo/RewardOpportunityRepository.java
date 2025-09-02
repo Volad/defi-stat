@@ -12,6 +12,8 @@ public interface RewardOpportunityRepository extends MongoRepository<RewardOppor
 
     Optional<RewardOpportunityDocument> findBySourceAndOpportunityIdAndTs(String source, String opportunityId, Instant ts);
 
+
+
     /**
      * Latest record at or before a given timestamp T for (network, vault, role).
      * Used to resolve the campaign state/APR exactly "as of" snapshot time.
@@ -32,4 +34,8 @@ public interface RewardOpportunityRepository extends MongoRepository<RewardOppor
     Optional<RewardOpportunityDocument>
     findTopByNetworkAndVaultAddressAndRoleOrderByTsAsc(
             String network, String vaultAddress, String role);
+
+    Optional<RewardOpportunityDocument> findTopBySourceAndOpportunityIdOrderByTsDesc(String source, String opportunityId);
+
+    List<RewardOpportunityDocument> findByNetworkAndVaultAddressAndRoleAndTsBetweenOrderByTsAsc(String network, String vault, String role, Instant from, Instant to);
 }

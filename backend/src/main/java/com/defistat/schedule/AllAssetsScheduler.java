@@ -30,7 +30,7 @@ public class AllAssetsScheduler {
     private final Map<String, ZonedDateTime> nextRuns = new HashMap<>();
 
 
-    @Scheduled(cron = "0 * * * * ?") // every 10 minutes
+//    @Scheduled(cron = "0 * * * * ?") // every 10 minutes
     public void run() {
         log.info("[assets-scheduler] started {}", System.currentTimeMillis());
         ZonedDateTime now = ZonedDateTime.now();
