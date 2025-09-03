@@ -26,7 +26,7 @@ public class RewardsIngestScheduler {
     /**
      * Every 10 minutes — tune by your needs.
      */
-    @Scheduled(cron = "0 0/10 * * * ?") // every 10 minutes
+    @Scheduled(cron = "0 0/30 * * * ?") // every 10 minutes
     public void run() {
         props.getNetwork().keySet().forEach(net -> {
                     try {
