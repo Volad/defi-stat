@@ -23,7 +23,10 @@ app:
         avax: avax
         base: base
         ethereum: ethereum
-        arbitrum: arb
+        arbitrum: arbitrum
+        bsc: bsc
+        unichain: unichain
+        tac: tac
   network:
     avalanche:
       chainId: 43114
@@ -47,9 +50,30 @@ app:
       polling:
         cron: "0 0/20 * * * ?"  # every 20 minutes
     ethereum:
+        chainId: 1
         rpcUrls: ${EULER_RPC_URL_MAINNET:https://eth.llamarpc.com}
         subgraph:
           url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-mainnet/latest/gn"
+    arbitrum:
+      chainId: 42161
+      rpcUrls: ${EULER_RPC_URL_ARBITRUM:https://api.zan.top/arb-one}
+      subgraph:
+        url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-arbitrum/latest/gn"
+    bsc:
+      chainId: 56
+      rpcUrls: ${EULER_RPC_URL_BSC:https://binance.llamarpc.com}
+      subgraph:
+        url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-bsc/latest/gn"
+    unichain:
+      chainId: 130
+      rpcUrls: ${EULER_RPC_URL_UNICHAIN:https://rpc.poolz.finance/unichain}
+      subgraph:
+        url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-unichain/latest/gn"
+    tac:
+      chainId: 239
+      rpcUrls: ${EULER_RPC_URL_TAC:https://rpc.ankr.com/tac}
+      subgraph:
+        url: "https://api.goldsky.com/api/public/project_cm4iagnemt1wp01xn4gh1agft/subgraphs/euler-v2-tac/latest/gn"
 
   calc:
     liquidationThresholdPct: 83

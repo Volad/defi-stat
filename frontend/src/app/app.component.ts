@@ -57,7 +57,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // network selector
     network = 'avalanche';
-    networks = ['avalanche','base','ethereum'];
+    networks = ['avalanche','base','ethereum','arbitrum','bsc','unichain','tac'];
     brushMin = 0;
     brushMax = 1000;
     brushStart = 0;     // left thumb position (0..1000)
@@ -324,7 +324,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.toISO    = e.toISOString();
 
         // Refetch series for the new range
-        this.buildSeries();
+        // this.buildSeries();
     }
 
     /** Converts [brushStart, brushEnd] into [minMs, maxMs] and resamples + recomputes stats. */
